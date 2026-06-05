@@ -1,16 +1,17 @@
 import type {Route} from "./+types/home";
 import {Welcome} from "../welcome/welcome";
+import imgUrl from '../explanation.png'
 import {
     Alert,
-    Button,
+    Button, Center,
     Container,
-    Fieldset,
+    Fieldset, Image,
     List, ListItem,
     MultiSelect,
     NumberInput,
     SimpleGrid,
     Stack,
-    Text
+    Text, Title
 } from "@mantine/core";
 import {Form} from "react-router";
 
@@ -33,8 +34,6 @@ class MinigameState {
     }
 
     moveCylinder(cylinderId: number, down: boolean): MinigameState | null {
-        if (this.trace.length > 30)
-            return null;
         // when we move one cylinder, all other cylinders move with it either in the same direction (1) or in the opposite direction (-1) or not at all (0)
         // So if we move down (increasing the hole number), then we add the cylinder direction
         const dir = down ? 1 : -1;
@@ -47,7 +46,7 @@ class MinigameState {
             }
             newPositions[i] = newPos;
         }
-        return new MinigameState(newPositions, this.cylinderDirections, [...this.trace, `cylinder ${cylinderId} ${down ? 'left' : 'right'}`]);
+        return new MinigameState(newPositions, this.cylinderDirections, [...this.trace, `cylinder ${cylinderId} ${down ? 'LEFT' : 'RIGHT'}`]);
     }
 
     stateId(): string {
@@ -89,7 +88,7 @@ export function clientLoader({request}: Route.ClientLoaderArgs) {
     const queryParams = new URLSearchParams(request.url.split("?")[1]);
     if (queryParams.size === 0) {
         return {
-            trace: ["no cylinders specified"]
+            trace: ["Please fill out the form correctly"]
         };
     }
     const allPositions = allCylinderIds.map(id => parseInt(queryParams.get(`cylinder-${id}-hole`) ?? "1"));
@@ -112,7 +111,7 @@ export function clientLoader({request}: Route.ClientLoaderArgs) {
     console.log(`search took ${Date.now() - now}ms`);
     if (trace == null) {
         return {
-            error: "no solution found"
+            error: "no solution found (did you fill out the form correctly?)"
         }
     }
     return {
@@ -131,15 +130,19 @@ function CylinderInfoInput({cylinderId, allCylinderIds}: { cylinderId: number, a
         <MultiSelect mb={"md"} name={`cylinder-${cylinderId}-followers`} data={data}
                      label={`Cylinders that move with cylinder ${cylinderId} in the same direction`}/>
         <MultiSelect name={`cylinder-${cylinderId}-anti-followers`} data={data}
-                     label={`Cylinders that move together with cylinder ${cylinderId} in the opposite direction`}/>
+                     label={`Cylinders that move with cylinder ${cylinderId} in the opposite direction`}/>
     </Fieldset>
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
     return <Container py={"lg"}>
+        <Title>
+            Gothic 1 Remake: Lockpick Puzzle Solver
+        </Title>
         <Form method={"GET"}>
             <Text mb={"lg"}>
-                Welcome! Begin by describing the starting state of the cylinders in the lockpicking puzzle.
+                Welcome! Begin by describing the starting state of the lockpicking puzzle by filling out the form below.
+                If you're unsure what the input fields mean, see the illustration at the bottom of the page.
             </Text>
             <SimpleGrid cols={{
                 base: 1,
@@ -151,13 +154,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             </SimpleGrid>
             <Button mt={"lg"} type={"submit"}>Solve it!</Button>
         </Form>
-        {loaderData?.error && <Alert color={"red"}>{loaderData.error}</Alert>}
-        {loaderData?.trace && <Alert color={"green"}>
-            <List>
-                {loaderData.trace.map((e, idx) => (<ListItem>
+        {loaderData?.error && <Alert mt={"lg"} color={"red"}>{loaderData.error}</Alert>}
+        {loaderData?.trace && <Alert mt={"lg"} color={"green"}>
+            <Title order={4}>Solution</Title>
+            <Text>For each line, go to the correct cylinder and then press either LEFT or RIGHT on the controller/keyboard</Text>
+            <List type={"unordered"}>
+                {loaderData.trace.map((e, idx) => (<ListItem key={idx}>
                     {e}
                 </ListItem>))}
             </List>
         </Alert>}
+        <Center mt={"lg"}>
+            <Image src={imgUrl} alt={"Lockpicking puzzle"} maw={600}/>
+        </Center>
     </Container>
 }
