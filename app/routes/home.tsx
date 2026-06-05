@@ -1,5 +1,4 @@
 import type {Route} from "./+types/home";
-import {Welcome} from "../welcome/welcome";
 import imgUrl from '../explanation.png'
 import {
     Alert,
@@ -10,15 +9,14 @@ import {
     MultiSelect,
     NumberInput,
     SimpleGrid,
-    Stack,
     Text, Title
 } from "@mantine/core";
 import {Form} from "react-router";
 
 export function meta({}: Route.MetaArgs) {
     return [
-        {title: "New React Router App"},
-        {name: "description", content: "Welcome to React Router!"},
+        {title: "Gothic 1 Remake: Lockpick Puzzle Solver"},
+        {name: "description", content: "This is the solver for the Gothic 1 Remake: Lockpick Puzzle. Fill out the form below to solve the puzzle."},
     ];
 }
 
