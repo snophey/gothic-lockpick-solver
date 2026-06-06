@@ -26,6 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <AppTheme>{children}</AppTheme>
         <ScrollRestoration />
         <Scripts />
+        <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
       </body>
     </html>
   );

@@ -86,7 +86,7 @@ export function clientLoader({request}: Route.ClientLoaderArgs) {
     const queryParams = new URLSearchParams(request.url.split("?")[1] ?? "");
     if (queryParams.size === 0) {
         return {
-            trace: ["Please fill out the form correctly"]
+            trace: ["(solution will appear here once you've filled out an submitted the form)"]
         };
     }
     const allPositions = allCylinderIds.map(id => parseInt(queryParams.get(`cylinder-${id}-hole`) ?? "1"));
@@ -182,7 +182,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         {loaderData?.error && <Alert mt={"lg"} color={"red"}>{loaderData.error}</Alert>}
         {loaderData?.trace && <Alert mt={"lg"} color={"green"}>
             <Title order={4}>Solution</Title>
-            <Text>For each line, go to the correct cylinder and then press either LEFT or RIGHT on the controller/keyboard</Text>
+            <Text>For each line, go to the correct cylinder and then press either LEFT or RIGHT on the controller/keyboard in the exact order shown here:</Text>
             <List type={"unordered"}>
                 {loaderData.trace.map((e, idx) => (<ListItem key={idx}>
                     {e}
