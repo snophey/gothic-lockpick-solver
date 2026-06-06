@@ -1,5 +1,5 @@
 import type {Route} from "./+types/home";
-import imgUrl from '../explanation.png'
+import imgUrl from '../../public/explanation.png'
 import {
     Alert,
     Button, Center,
