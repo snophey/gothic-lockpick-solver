@@ -83,7 +83,7 @@ function search(currentState: MinigameState, seen: Set<string>): null | string[]
 
 export function clientLoader({request}: Route.ClientLoaderArgs) {
     // parse all query params
-    const queryParams = new URLSearchParams(request.url.split("?")[1]);
+    const queryParams = new URLSearchParams(request.url.split("?")[1] ?? "");
     if (queryParams.size === 0) {
         return {
             trace: ["Please fill out the form correctly"]
@@ -91,10 +91,12 @@ export function clientLoader({request}: Route.ClientLoaderArgs) {
     }
     const allPositions = allCylinderIds.map(id => parseInt(queryParams.get(`cylinder-${id}-hole`) ?? "1"));
     const allDirections = allCylinderIds.map(id => {
-        const followers = (queryParams.get(`cylinder-${id}-followers`)?.split(",") ?? []).map(f => parseInt(f)-1);
-        const antiFollowers = (queryParams.get(`cylinder-${id}-anti-followers`)?.split(",") ?? []).map(f => parseInt(f)-1);
-        const directions = allCylinderIds.map(id => 0);
-        for (const f of [...followers, id-1]) { // trivially, all cylinders move with themselves
+        const followersParam = queryParams.get(`cylinder-${id}-followers`);
+        const antiParam = queryParams.get(`cylinder-${id}-anti-followers`);
+        const followers = followersParam ? followersParam.split(",").map(s => parseInt(s.trim()) - 1).filter(n => !Number.isNaN(n)) : [];
+        const antiFollowers = antiParam ? antiParam.split(",").map(s => parseInt(s.trim()) - 1).filter(n => !Number.isNaN(n)) : [];
+        const directions = allCylinderIds.map(() => 0);
+        for (const f of [...followers, id - 1]) { // trivially, all cylinders move with themselves
             directions[f] = 1;
         }
         for (const f of antiFollowers) {
@@ -102,6 +104,17 @@ export function clientLoader({request}: Route.ClientLoaderArgs) {
         }
         return directions;
     });
+
+    // Prepare default values for re-populating the form (use string ids for MultiSelect)
+    const formFollowers = allCylinderIds.map(id => {
+        const param = queryParams.get(`cylinder-${id}-followers`);
+        return param ? param.split(",").map(s => s.trim()).filter(Boolean).map(String) : [];
+    });
+    const formAntiFollowers = allCylinderIds.map(id => {
+        const param = queryParams.get(`cylinder-${id}-anti-followers`);
+        return param ? param.split(",").map(s => s.trim()).filter(Boolean).map(String) : [];
+    });
+
     const initialState = new MinigameState(allPositions, allDirections);
     const seen = new Set<string>();
     const now = Date.now();
@@ -109,26 +122,37 @@ export function clientLoader({request}: Route.ClientLoaderArgs) {
     console.log(`search took ${Date.now() - now}ms`);
     if (trace == null) {
         return {
-            error: "no solution found (did you fill out the form correctly?)"
+            error: "no solution found (did you fill out the form correctly?)",
+            form: {
+                positions: allPositions,
+                followers: formFollowers,
+                antiFollowers: formAntiFollowers
+            }
         }
     }
     return {
-        trace: trace
+        trace: trace,
+        form: {
+            positions: allPositions,
+            followers: formFollowers,
+            antiFollowers: formAntiFollowers
+        }
     }
 }
 
-function CylinderInfoInput({cylinderId, allCylinderIds}: { cylinderId: number, allCylinderIds: number[] }) {
-    const data = allCylinderIds.filter(id => id !== cylinderId);
+function CylinderInfoInput({cylinderId, allCylinderIds, defaultHole, defaultFollowers, defaultAntiFollowers}: { cylinderId: number, allCylinderIds: number[], defaultHole?: number, defaultFollowers?: string[], defaultAntiFollowers?: string[] }) {
+    // MultiSelect expects string data; convert ids to strings
+    const data = allCylinderIds.filter(id => id !== cylinderId).map(String);
     return <Fieldset>
         <legend>
             Cylinder {cylinderId}
         </legend>
         <NumberInput mb={"md"} name={`cylinder-${cylinderId}-hole`} min={1} max={7} label={"Current hole"}
-                     description={"1 is the top-most hole and 7 is the bottom-most hole"}/>
+                     description={"1 is the top-most hole and 7 is the bottom-most hole"} defaultValue={defaultHole}/>
         <MultiSelect mb={"md"} name={`cylinder-${cylinderId}-followers`} data={data}
-                     label={`Cylinders that move with cylinder ${cylinderId} in the same direction`}/>
+                     label={`Cylinders that move with cylinder ${cylinderId} in the same direction`} defaultValue={defaultFollowers}/>
         <MultiSelect name={`cylinder-${cylinderId}-anti-followers`} data={data}
-                     label={`Cylinders that move with cylinder ${cylinderId} in the opposite direction`}/>
+                     label={`Cylinders that move with cylinder ${cylinderId} in the opposite direction`} defaultValue={defaultAntiFollowers}/>
     </Fieldset>
 }
 
@@ -148,7 +172,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 md: 3
             }}>
                 {allCylinderIds.map(cylinderId => <CylinderInfoInput key={cylinderId} cylinderId={cylinderId}
-                                                                     allCylinderIds={allCylinderIds}/>)}
+                                                                     allCylinderIds={allCylinderIds}
+                                                                     defaultHole={loaderData?.form?.positions?.[cylinderId - 1]}
+                                                                     defaultFollowers={loaderData?.form?.followers?.[cylinderId - 1]}
+                                                                     defaultAntiFollowers={loaderData?.form?.antiFollowers?.[cylinderId - 1]}/>) }
             </SimpleGrid>
             <Button mt={"lg"} type={"submit"}>Solve it!</Button>
         </Form>
